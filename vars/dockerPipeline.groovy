@@ -17,7 +17,7 @@ def call(String dockerRepoName) {
             VIRTUAL_ENV = '/opt/venv'
             PATH = "$VIRTUAL_ENV/bin:$PATH"
             DOCKER_IMAGE_NAME = "${dockerRepoName}:${BUILD_NUMBER}"
-        }
+            }
         stages {
             stage('Setup') {
                 steps {
@@ -39,18 +39,20 @@ def call(String dockerRepoName) {
                     }
                 }
             }
-            stage('Security Scan') {
-                steps {
-                    snykSecurity(
-                        snykInstallation: 'snyk', 
-                        snykTokenId: 'A01332333', 
-                        failOnIssues: true,
-                        failOnError: true,
-                        targetFile: "${serviceDir[params.SERVICE_NAME]}/requirements.txt", 
-                        severity: 'low'
-                    )
-                }
+          stage('Security Scan') {
+            steps {
+                sh '''
+                # Activate virtual environment if necessary
+                . venv/bin/activate
+                # Ensure safety is installed
+                pip install safety
+                # Run safety check against the requirements file of the specified service
+                safety check -r ${serviceDir[params.SERVICE_NAME]}/requirements.txt --full-report
+                '''
             }
+        }
+
+            
             stage('Package') {
                 when {
                     branch 'main'
