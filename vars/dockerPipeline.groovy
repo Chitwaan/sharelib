@@ -77,18 +77,21 @@ def call(String dockerRepoName) {
 
 
 
-            stage("Deploy") {
+          stage("Deploy") {
                 when {
                     expression { params.DEPLOY == true }
                 }
                 steps {
                     script {
                         sshagent(['deployment']) {
-                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker compose pull ${dockerRepoName} && docker compose up -d ${dockerRepoName}'"
+                            // Ensure the SERVICE_NAME parameter matches one of the service names in docker-compose.yml
+                            def deployService = params.SERVICE_NAME // e.g., 'receiver'
+                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker compose pull ${deployService} && docker compose up -d ${deployService}'"
                         }
                     }
                 }
             }
+
         }
     }
 }
