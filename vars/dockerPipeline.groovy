@@ -42,9 +42,7 @@ def call(String dockerRepoName) {
           stage('Security Scan') {
                 steps {
                     script {
-                        // Activating virtual environment and running safety check
-                        // Ensure that the virtual environment activation is successful
-                        // and that the requirements.txt path is correctly formed
+                
                         def command = """
                         . venv/bin/activate
                         pip install safety
@@ -60,7 +58,7 @@ def call(String dockerRepoName) {
             steps {
                 withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
                     sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                    sh "docker build -t chitwankaur/${DOCKER_IMAGE_NAME} ."
+                    sh 'docker build -t chitwankaur/mydockerrepo:17 -f Deployment/Dockerfile Deployment'
                     sh "docker push chitwankaur/${DOCKER_IMAGE_NAME}"
                 }
             }
