@@ -56,17 +56,13 @@ def call(String dockerRepoName) {
             
             stage('Package') {
             steps {
-               dir('Deployment') {
-            withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
-                
-                sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                sh 'pwd'
-                sh 'ls -lah'
-                sh 'docker build -t chitwankaur/mydockerrepo:17 -f Dockerfile .'
-                sh "docker push chitwankaur/${DOCKER_IMAGE_NAME}"
-            }
-        }
-
+                withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
+                    sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
+                    sh 'pwd'
+                    sh 'ls -lah'
+                    sh "docker build -t chitwankaur/mydockerrepo:${BUILD_NUMBER} -f ${params.SERVICE_NAME}/Dockerfile ."
+                    sh "docker push chitwankaur/mydockerrepo:${BUILD_NUMBER}"
+                }
             }
         }
 
