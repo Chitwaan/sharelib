@@ -60,12 +60,7 @@ def call(String dockerRepoName) {
         steps {
             withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
             script {
-                // Define the serviceDir mapping within the script block to ensure it's accessible
-                def serviceDir = [
-                    'receiver': 'Receiver',
-                    'storage': 'Storage',
-                    // Add other services with the correct case as needed
-                ]
+ 
                 
                 def serviceName = params.SERVICE_NAME.toLowerCase() // Assuming SERVICE_NAME is passed in correctly cased
                 sh 'pwd'
