@@ -57,9 +57,7 @@ def call(String dockerRepoName) {
 
             
             stage('Package') {
-                when {
-                    branch 'main'
-                }
+                
                 steps {
                     withCredentials([string(credentialsId: 'DockerHub', variable: 'TOKEN')]) {
                         sh "docker login -u 'chitwankaur' -p '$TOKEN' docker.io"
@@ -75,7 +73,7 @@ def call(String dockerRepoName) {
                 steps {
                     script {
                         sshagent(['deployment']) {
-                            sh "ssh -o StrictHostKeyChecking=no ubuntu@your.vm.ip.address 'cd /path/to/deployment && docker-compose pull ${dockerRepoName} && docker-compose up -d ${dockerRepoName}'"
+                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker-compose pull ${dockerRepoName} && docker-compose up -d ${dockerRepoName}'"
                         }
                     }
                 }
