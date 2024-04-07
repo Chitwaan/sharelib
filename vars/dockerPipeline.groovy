@@ -54,17 +54,31 @@ def call(String dockerRepoName) {
             }
 
             
-            stage('Package') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
-                    sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                    sh 'pwd'
-                    sh 'ls -lah'
-                    sh "docker build -t chitwankaur/mydockerrepo:${BUILD_NUMBER} -f ${params.SERVICE_NAME}/Dockerfile ."
-                    sh "docker push chitwankaur/mydockerrepo:${BUILD_NUMBER}"
-                }
+     
+
+        stage('Package') {
+        steps {
+            withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
+            script {
+                // Define the serviceDir mapping within the script block to ensure it's accessible
+                def serviceDir = [
+                    'receiver': 'Receiver',
+                    'storage': 'Storage',
+                    // Add other services with the correct case as needed
+                ]
+                
+                def serviceName = params.SERVICE_NAME.toLowerCase() // Assuming SERVICE_NAME is passed in correctly cased
+                sh 'pwd'
+                sh 'ls -lah'
+                def dockerfilePath = "${serviceDir[serviceName]}/Dockerfile" // Use the mapping to get the correct directory name
+                sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
+                sh "docker build -t chitwankaur/mydockerrepo:${BUILD_NUMBER} -f ${dockerfilePath} ."
+                sh "docker push chitwankaur/mydockerrepo:${BUILD_NUMBER}"
             }
         }
+    }
+}
+
 
             stage("Deploy") {
                 when {
