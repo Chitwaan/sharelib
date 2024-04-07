@@ -57,22 +57,24 @@ def call(String dockerRepoName) {
      
 
         stage('Package') {
-        steps {
-            withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
-            script {
- 
-                
-                def serviceName = params.SERVICE_NAME.toLowerCase() // Assuming SERVICE_NAME is passed in correctly cased
-                sh 'pwd'
-                sh 'ls -lah'
-                def dockerfilePath = "${serviceDir[serviceName]}/Dockerfile" // Use the mapping to get the correct directory name
-                sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                sh "docker build -t chitwankaur/mydockerrepo:${BUILD_NUMBER} -f ${dockerfilePath} ."
-                sh "docker push chitwankaur/mydockerrepo:${BUILD_NUMBER}"
+                steps {
+                    withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
+                        script {
+                            def serviceName = params.SERVICE_NAME.toLowerCase()
+                            def dockerfilePath = "${serviceDir[serviceName]}/Dockerfile"
+                            // Change directory to the service directory before building.
+                            // This sets the build context to the service directory, which should contain both the Dockerfile and requirements.txt.
+                            dir("${serviceDir[serviceName]}") {
+                                sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
+                                // Since we're now in the correct directory, the build context is '.', and Dockerfile path doesn't need to be specified if named 'Dockerfile'.
+                                sh "docker build -t chitwankaur/mydockerrepo:${BUILD_NUMBER} ."
+                                sh "docker push chitwankaur/mydockerrepo:${BUILD_NUMBER}"
+                            }
+                        }
+                    }
+                }
             }
-        }
-    }
-}
+
 
 
             stage("Deploy") {
