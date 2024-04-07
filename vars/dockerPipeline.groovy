@@ -1,6 +1,10 @@
 // This is assuming you're creating a shared library global variable named 'dockerPipeline'
 // This script should be placed in the 'vars' directory of your shared library repository.
-
+def serviceDir = [
+  'receiver': 'Receiver',
+  'storage': 'Storage',
+  // Add other services with the correct case as needed
+]
 def call(String dockerRepoName) {
     pipeline {
         agent any
@@ -19,7 +23,7 @@ def call(String dockerRepoName) {
                     sh 'python3 -m venv venv'
                     sh '. venv/bin/activate'
                     sh 'pip install --upgrade pip'
-                    sh "pip install -r ${params.SERVICE_NAME}/requirements.txt"
+                    sh "pip install -r ${serviceDir[params.SERVICE_NAME]}/requirements.txt"
                 }
             }
             stage('Lint') {
