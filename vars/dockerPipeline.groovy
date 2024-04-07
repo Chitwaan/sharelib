@@ -40,17 +40,20 @@ def call(String dockerRepoName) {
                 }
             }
           stage('Security Scan') {
-            steps {
-                sh '''
-                # Activate virtual environment if necessary
-                . venv/bin/activate
-                # Ensure safety is installed
-                pip install safety
-                # Run safety check against the requirements file of the specified service
-                safety check -r ${serviceDir[params.SERVICE_NAME]}/requirements.txt --full-report
-                '''
+                steps {
+                    script {
+                        // Activating virtual environment and running safety check
+                        // Ensure that the virtual environment activation is successful
+                        // and that the requirements.txt path is correctly formed
+                        def command = """
+                        . venv/bin/activate
+                        pip install safety
+                        safety check -r ${env.WORKSPACE}/${serviceDir[params.SERVICE_NAME]}/requirements.txt --full-report
+                        """
+                        sh command
+                    }
+                }
             }
-        }
 
             
             stage('Package') {
