@@ -57,16 +57,15 @@ def call(String dockerRepoName) {
 
             
             stage('Package') {
-                
-                steps {
-                    withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh "echo '$PASSWORD' | docker login -u '$USERNAME' --password-stdin docker.io"
-                        sh "docker build -t $USERNAME/${DOCKER_IMAGE_NAME} ./${params.SERVICE_NAME}/"
-                        sh "docker push $USERNAME/${DOCKER_IMAGE_NAME}"
-                    }
-
+            steps {
+                withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
+                    sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
+                    sh "docker build -t chitwankaur/${DOCKER_IMAGE_NAME} ."
+                    sh "docker push chitwankaur/${DOCKER_IMAGE_NAME}"
                 }
             }
+        }
+
             stage("Deploy") {
                 when {
                     expression { params.DEPLOY == true }
