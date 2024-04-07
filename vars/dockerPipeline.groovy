@@ -1,11 +1,12 @@
 // This is assuming you're creating a shared library global variable named 'dockerPipeline'
 // This script should be placed in the 'vars' directory of your shared library repository.
-def serviceDir = [
-  'receiver': 'Receiver',
-  'storage': 'Storage',
-  // Add other services with the correct case as needed
-]
+
 def call(String dockerRepoName) {
+    def serviceDir = [
+        'receiver': 'Receiver',
+        'storage': 'Storage',
+        // Add other services with the correct case as needed
+    ]
     pipeline {
         agent any
         parameters {
