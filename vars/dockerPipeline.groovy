@@ -29,7 +29,14 @@ def call(String dockerRepoName) {
             }
             stage('Lint') {
                 steps {
-                    sh "pylint --fail-under=5 ${params.SERVICE_NAME}/*.py"
+                    script {
+                        // Assuming you are in the root directory of the checked out repository
+                        if (sh(returnStatus: true, script: 'test -d ${serviceDir[params.SERVICE_NAME]}')) {
+                            sh "pylint --fail-under=5 ${serviceDir[params.SERVICE_NAME]}/*.py"
+                        } else {
+                            error("The directory '${serviceDir[params.SERVICE_NAME]}' does not exist.")
+                        }
+                    }
                 }
             }
             stage('Security Scan') {
@@ -39,7 +46,7 @@ def call(String dockerRepoName) {
                         snykTokenId: 'A01332333', 
                         failOnIssues: true,
                         failOnError: true,
-                        targetFile: "${params.SERVICE_NAME}/requirements.txt", 
+                        targetFile: "${serviceDir[params.SERVICE_NAME]}/requirements.txt", 
                         severity: 'low'
                     )
                 }
