@@ -25,17 +25,29 @@ def call(String dockerRepoName, String serviceName) {
                     }
                 }
             }
-            stage('Lint') {
-                steps {
-                    script {
-                        if (sh(returnStatus: true, script: 'test -d ${serviceDir[params.SERVICE_NAME]}')) {
-                            sh "pylint --fail-under=5 ${serviceDir[params.SERVICE_NAME]}/*.py"
-                        } else {
-                            error("The directory '${serviceDir[params.SERVICE_NAME]}' does not exist.")
-                        }
-                    }
-                }
+           stage('Lint') {
+    steps {
+        script {
+            // Define the service directory based on the parameter
+            def serviceDirectory = serviceDir[params.SERVICE_NAME]
+
+            // Construct the full path to the service directory
+            def fullPath = "${WORKSPACE}/${serviceDirectory}"
+
+            // Debug: output the full path to ensure it's correct
+            echo "Full path to lint: ${fullPath}"
+
+            // Check if the directory exists using an absolute path
+            if (sh(returnStatus: true, script: "test -d ${fullPath}")) {
+                // If the directory exists, proceed with linting using the absolute path
+                sh "pylint --fail-under=5 ${fullPath}/*.py"
+            } else {
+                // If the directory does not exist, throw an error with the absolute path for clarity
+                error("The directory ${fullPath} does not exist.")
             }
+        }
+    }
+}
 
 
 
