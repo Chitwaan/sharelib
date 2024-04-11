@@ -1,7 +1,7 @@
 def call(String dockerRepoName, String serviceName) {
     // Mapping of service name to the GitHub directory
     def serviceDir = [
-        'receiver': 'Microservices/Receiver',
+        'receiver': 'Receiver',
         'storage': 'Microservices/Storage',
         'processing': 'Microservices/Processing'
     ]
