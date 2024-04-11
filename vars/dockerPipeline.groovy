@@ -1,9 +1,8 @@
 def call(String dockerRepoName, String serviceName) {
-    // Mapping of service name to the GitHub directory
     def serviceDir = [
         'receiver': 'Receiver',
-        'storage': 'Microservices/Storage',
-        'processing': 'Microservices/Processing'
+        'storage': 'Storage',
+        'processing': 'Processing'
     ]
     pipeline {
         agent any
@@ -16,35 +15,43 @@ def call(String dockerRepoName, String serviceName) {
             stage('Setup') {
                 steps {
                     script {
-                        // Create a Python virtual environment and install dependencies
-                        sh 'python3 -m venv ${VIRTUAL_ENV}'
-                        sh 'source ${VIRTUAL_ENV}/bin/activate'
+                        echo "${WORKSPACE}/${serviceDir[serviceName]}"
+                        sh 'python3 -m venv venv'
+                        sh '. venv/bin/activate'
                         sh 'pip install --upgrade pip'
                         sh "pip install -r ${WORKSPACE}/${serviceDir[serviceName]}/requirements.txt"
+
+                        sh "pip install -r ${serviceDir[serviceName]}/requirements.txt"
                     }
                 }
             }
             stage('Lint') {
-                steps {
-                    script {
-                        // Perform linting with pylint
-                        if (sh(returnStatus: true, script: "test -d ${WORKSPACE}/${serviceDir[serviceName]}")) {
-                            sh "pylint --fail-under=5 ${WORKSPACE}/${serviceDir[serviceName]}/*.py"
-                        } else {
-                            error("The directory '${WORKSPACE}/${serviceDir[serviceName]}' does not exist.")
-                        }
+            steps {
+                script {
+                    // Debug: List the contents of the service directory
+                    sh "ls -lah ${WORKSPACE}/${serviceDir[serviceName]}"
+
+                    // Check if the directory exists using an absolute path
+                    if (sh(returnStatus: true, script: "test -d ${WORKSPACE}/${serviceDir[serviceName]}")) {
+                        // If the directory exists, proceed with linting using the absolute path
+                        sh "pylint --fail-under=5 ${WORKSPACE}/${serviceDir[serviceName]}/*.py"
+                    } else {
+                        // If the directory does not exist, throw an error with the absolute path for clarity
+                        error("The directory '${WORKSPACE}/${serviceDir[serviceName]}' does not exist.")
                     }
                 }
             }
+        }
+
             stage('Security Scan') {
                 steps {
                     script {
-                        // Perform security scanning with safety
-                        sh """
-                        source ${VIRTUAL_ENV}/bin/activate
+                        def command = """
+                        . venv/bin/activate
                         pip install safety
-                        safety check -r ${WORKSPACE}/${serviceDir[serviceName]}/requirements.txt --full-report
+                        safety check -r ${serviceDir[serviceName]}/requirements.txt --full-report
                         """
+                        sh command
                     }
                 }
             }
@@ -52,11 +59,10 @@ def call(String dockerRepoName, String serviceName) {
                 steps {
                     withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
                         script {
-                            // Build and push the Docker image
-                            dir("${WORKSPACE}/${serviceDir[serviceName]}") {
+                            dir(serviceDir[serviceName]) {
                                 sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                                sh "docker build -t ${DOCKER_IMAGE_NAME} ."
-                                sh "docker push ${DOCKER_IMAGE_NAME}"
+                                sh "docker build -t ${dockerRepoName}:${serviceName}:${BUILD_NUMBER} ."
+                                sh "docker push ${dockerRepoName}:${serviceName}:${BUILD_NUMBER}"
                             }
                         }
                     }
@@ -68,9 +74,8 @@ def call(String dockerRepoName, String serviceName) {
                 }
                 steps {
                     script {
-                        // Manually triggered deployment stage
                         sshagent(['deployment']) {
-                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker-compose pull ${serviceName} && docker-compose up -d ${serviceName}'"
+                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker compose pull ${serviceName} && docker compose up -d ${serviceName}'"
                         }
                     }
                 }
