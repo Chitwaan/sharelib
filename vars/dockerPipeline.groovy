@@ -19,6 +19,8 @@ def call(String dockerRepoName, String serviceName) {
                         sh 'python3 -m venv venv'
                         sh '. venv/bin/activate'
                         sh 'pip install --upgrade pip'
+                        sh "pip install -r ${WORKSPACE}/${serviceDir[serviceName]}/requirements.txt"
+
                         sh "pip install -r ${serviceDir[serviceName]}/requirements.txt"
                     }
                 }
