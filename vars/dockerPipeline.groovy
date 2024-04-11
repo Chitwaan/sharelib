@@ -26,20 +26,26 @@ def call(String dockerRepoName, String serviceName) {
                 }
             }
             stage('Lint') {
-            steps {
-                script {
-                    // Confirm the directory exists
-                    def receiverDir = "${WORKSPACE}/${serviceDir['receiver']}"
-                    if (sh(returnStatus: true, script: "test -d ${receiverDir}")) {
-                        // Directory exists, run pylint
-                        sh "pylint --fail-under=5 ${receiverDir}/*.py"
-                    } else {
-                        // Directory doesn't exist, throw an error
-                        error("The directory ${receiverDir} does not exist.")
-                    }
-                }
+    steps {
+        script {
+            // Define the absolute path to the Receiver directory
+            def receiverPath = "${WORKSPACE}/${serviceDir['receiver']}"
+
+            // Debug: output the absolute path to ensure it's correct
+            echo "Checking lint in the directory: ${receiverPath}"
+
+            // Use the absolute path in the test command
+            if (sh(returnStatus: true, script: "test -d ${receiverPath}")) {
+                // If the directory exists, run pylint on all .py files in the directory
+                sh "pylint --fail-under=5 ${receiverPath}/*.py"
+            } else {
+                // If the directory does not exist, throw an error with the path for clarity
+                error("The directory ${receiverPath} does not exist.")
             }
         }
+    }
+}
+
 
 
             stage('Security Scan') {
