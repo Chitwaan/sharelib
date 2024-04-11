@@ -15,33 +15,27 @@ def call(String dockerRepoName, String serviceName) {
             stage('Setup') {
                 steps {
                     script {
-                        echo "${WORKSPACE}/${serviceDir[serviceName]}"
+                        echo "Installing dependencies in: ${WORKSPACE}/${serviceDir[serviceName]}"
                         sh 'python3 -m venv venv'
                         sh '. venv/bin/activate'
                         sh 'pip install --upgrade pip'
+                        // Corrected to reflect the 'Microservices' directory
                         sh "pip install -r ${WORKSPACE}/${serviceDir[serviceName]}/requirements.txt"
-
-                        sh "pip install -r ${serviceDir[serviceName]}/requirements.txt"
                     }
                 }
             }
             stage('Lint') {
-            steps {
-                script {
-                    // Debug: List the contents of the service directory
-                    sh "ls -lah ${WORKSPACE}/${serviceDir[serviceName]}"
-
-                    // Check if the directory exists using an absolute path
-                    if (sh(returnStatus: true, script: "test -d ${WORKSPACE}/${serviceDir[serviceName]}")) {
-                        // If the directory exists, proceed with linting using the absolute path
-                        sh "pylint --fail-under=5 ${WORKSPACE}/${serviceDir[serviceName]}/*.py"
-                    } else {
-                        // If the directory does not exist, throw an error with the absolute path for clarity
-                        error("The directory '${WORKSPACE}/${serviceDir[serviceName]}' does not exist.")
+                steps {
+                    script {
+                        // Corrected to reflect the 'Microservices' directory
+                        if (sh(returnStatus: true, script: "test -d ${WORKSPACE}/${serviceDir[serviceName]}")) {
+                            sh "pylint --fail-under=5 ${WORKSPACE}/${serviceDir[serviceName]}/*.py"
+                        } else {
+                            error("The directory '${WORKSPACE}/${serviceDir[serviceName]}' does not exist.")
+                        }
                     }
                 }
             }
-        }
 
             stage('Security Scan') {
                 steps {
