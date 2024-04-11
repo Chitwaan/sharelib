@@ -25,6 +25,8 @@ def call(String dockerRepoName, String serviceName) {
             stage('Lint') {
                 steps {
                     script {
+                        sh 'ls -lah'
+
                         if (sh(returnStatus: true, script: "test -d ${serviceDir[serviceName]}")) {
                             sh "pylint --fail-under=5 ${serviceDir[serviceName]}/*.py"
                         } else {
