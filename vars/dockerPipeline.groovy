@@ -15,6 +15,7 @@ def call(String dockerRepoName, String serviceName) {
             stage('Setup') {
                 steps {
                     script {
+                        echo "${WORKSPACE}/${serviceDir[serviceName]}"
                         sh 'python3 -m venv venv'
                         sh '. venv/bin/activate'
                         sh 'pip install --upgrade pip'
