@@ -1,6 +1,6 @@
 def call(String dockerRepoName, String serviceName) {
     def serviceDir = [
-        'receiver': 'Receiver',
+        'receiver': 'Microservices/Receiver',
         'storage': 'Storage',
         'processing': 'Processing'
     ]
