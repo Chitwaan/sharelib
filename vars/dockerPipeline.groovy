@@ -5,6 +5,7 @@ def call(String dockerRepoName) {
     def serviceDir = [
         'receiver': 'Receiver',
         'storage': 'Storage',
+        'processing': 'Processing'
         // Add other services with the correct case as needed
     ]
     pipeline {
