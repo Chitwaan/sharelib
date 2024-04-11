@@ -1,8 +1,9 @@
 def call(String dockerRepoName, String serviceName) {
+    // Mapping of service name to the GitHub directory
     def serviceDir = [
         'receiver': 'Microservices/Receiver',
-        'storage': 'Storage',
-        'processing': 'Processing'
+        'storage': 'Microservices/Storage',
+        'processing': 'Microservices/Processing'
     ]
     pipeline {
         agent any
@@ -15,11 +16,10 @@ def call(String dockerRepoName, String serviceName) {
             stage('Setup') {
                 steps {
                     script {
-                        echo "Installing dependencies in: ${WORKSPACE}/${serviceDir[serviceName]}"
-                        sh 'python3 -m venv venv'
-                        sh '. venv/bin/activate'
+                        // Create a Python virtual environment and install dependencies
+                        sh 'python3 -m venv ${VIRTUAL_ENV}'
+                        sh 'source ${VIRTUAL_ENV}/bin/activate'
                         sh 'pip install --upgrade pip'
-                        // Corrected to reflect the 'Microservices' directory
                         sh "pip install -r ${WORKSPACE}/${serviceDir[serviceName]}/requirements.txt"
                     }
                 }
@@ -27,7 +27,7 @@ def call(String dockerRepoName, String serviceName) {
             stage('Lint') {
                 steps {
                     script {
-                        // Corrected to reflect the 'Microservices' directory
+                        // Perform linting with pylint
                         if (sh(returnStatus: true, script: "test -d ${WORKSPACE}/${serviceDir[serviceName]}")) {
                             sh "pylint --fail-under=5 ${WORKSPACE}/${serviceDir[serviceName]}/*.py"
                         } else {
@@ -36,16 +36,15 @@ def call(String dockerRepoName, String serviceName) {
                     }
                 }
             }
-
             stage('Security Scan') {
                 steps {
                     script {
-                        def command = """
-                        . venv/bin/activate
+                        // Perform security scanning with safety
+                        sh """
+                        source ${VIRTUAL_ENV}/bin/activate
                         pip install safety
-                        safety check -r ${serviceDir[serviceName]}/requirements.txt --full-report
+                        safety check -r ${WORKSPACE}/${serviceDir[serviceName]}/requirements.txt --full-report
                         """
-                        sh command
                     }
                 }
             }
@@ -53,10 +52,11 @@ def call(String dockerRepoName, String serviceName) {
                 steps {
                     withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
                         script {
-                            dir(serviceDir[serviceName]) {
+                            // Build and push the Docker image
+                            dir("${WORKSPACE}/${serviceDir[serviceName]}") {
                                 sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                                sh "docker build -t ${dockerRepoName}:${serviceName}:${BUILD_NUMBER} ."
-                                sh "docker push ${dockerRepoName}:${serviceName}:${BUILD_NUMBER}"
+                                sh "docker build -t ${DOCKER_IMAGE_NAME} ."
+                                sh "docker push ${DOCKER_IMAGE_NAME}"
                             }
                         }
                     }
@@ -68,8 +68,9 @@ def call(String dockerRepoName, String serviceName) {
                 }
                 steps {
                     script {
+                        // Manually triggered deployment stage
                         sshagent(['deployment']) {
-                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker compose pull ${serviceName} && docker compose up -d ${serviceName}'"
+                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker-compose pull ${serviceName} && docker-compose up -d ${serviceName}'"
                         }
                     }
                 }
