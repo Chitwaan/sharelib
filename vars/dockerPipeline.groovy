@@ -1,6 +1,4 @@
-
-
-def call(String dockerRepoName) {
+def call(String dockerRepoName, String serviceName) {
     def serviceDir = [
         'receiver': 'Receiver',
         'storage': 'Storage',
@@ -8,85 +6,70 @@ def call(String dockerRepoName) {
     ]
     pipeline {
         agent any
-        parameters {
-            string(name: 'SERVICE_NAME', defaultValue: 'receiver', description: 'Name of the service to operate on: receiver, storage, processing')
-            booleanParam(defaultValue: false, description: 'Deploy the Apps', name: 'DEPLOY')
-        }
         environment {
             VIRTUAL_ENV = '/opt/venv'
             PATH = "$VIRTUAL_ENV/bin:$PATH"
-            DOCKER_IMAGE_NAME = "${dockerRepoName}:${BUILD_NUMBER}"
-            }
+            DOCKER_IMAGE_NAME = "${dockerRepoName}:${serviceName}:${BUILD_NUMBER}"
+        }
         stages {
             stage('Setup') {
                 steps {
-                    sh 'python3 -m venv venv'
-                    sh '. venv/bin/activate'
-                    sh 'pip install --upgrade pip'
-                    sh "pip install -r ${serviceDir[params.SERVICE_NAME]}/requirements.txt"
+                    script {
+                        sh 'python3 -m venv venv'
+                        sh '. venv/bin/activate'
+                        sh 'pip install --upgrade pip'
+                        sh "pip install -r ${serviceDir[serviceName]}/requirements.txt"
+                    }
                 }
             }
             stage('Lint') {
                 steps {
                     script {
-                        if (sh(returnStatus: true, script: 'test -d ${serviceDir[params.SERVICE_NAME]}')) {
-                            sh "pylint --fail-under=5 ${serviceDir[params.SERVICE_NAME]}/*.py"
+                        if (sh(returnStatus: true, script: "test -d ${serviceDir[serviceName]}")) {
+                            sh "pylint --fail-under=5 ${serviceDir[serviceName]}/*.py"
                         } else {
-                            error("The directory '${serviceDir[params.SERVICE_NAME]}' does not exist.")
+                            error("The directory '${serviceDir[serviceName]}' does not exist.")
                         }
                     }
                 }
             }
-          stage('Security Scan') {
+            stage('Security Scan') {
                 steps {
                     script {
-                
                         def command = """
                         . venv/bin/activate
                         pip install safety
-                        safety check -r ${env.WORKSPACE}/${serviceDir[params.SERVICE_NAME]}/requirements.txt --full-report
+                        safety check -r ${serviceDir[serviceName]}/requirements.txt --full-report
                         """
                         sh command
                     }
                 }
             }
-
-            
-     
-
-        stage('Package') {
+            stage('Package') {
                 steps {
                     withCredentials([string(credentialsId: 'dockerHubToken', variable: 'TOKEN')]) {
                         script {
-                            def serviceName = params.SERVICE_NAME.toLowerCase()
-                            def dockerfilePath = "${serviceDir[serviceName]}/Dockerfile"
-                           
-                            dir("${serviceDir[serviceName]}") {
+                            dir(serviceDir[serviceName]) {
                                 sh 'echo $TOKEN | docker login --username chitwankaur --password-stdin'
-                                sh "docker build -t chitwankaur/mydockerrepo:${BUILD_NUMBER} ."
-                                sh "docker push chitwankaur/mydockerrepo:${BUILD_NUMBER}"
+                                sh "docker build -t ${dockerRepoName}:${serviceName}:${BUILD_NUMBER} ."
+                                sh "docker push ${dockerRepoName}:${serviceName}:${BUILD_NUMBER}"
                             }
                         }
                     }
                 }
             }
-
-
-
-          stage("Deploy") {
+            stage("Deploy") {
                 when {
                     expression { params.DEPLOY == true }
                 }
                 steps {
                     script {
                         sshagent(['deployment']) {
-                            def deployService = params.SERVICE_NAME 
-                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker compose pull ${deployService} && docker compose up -d ${deployService}'"
+                            sh "ssh -o StrictHostKeyChecking=no chitwan@40.76.138.76 'cd Microservices/Deployment && docker compose pull ${serviceName} && docker compose up -d ${serviceName}'"
                         }
                     }
                 }
             }
-
         }
     }
 }
